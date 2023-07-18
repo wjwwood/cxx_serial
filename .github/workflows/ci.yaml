@@ -1,0 +1,35 @@
+name: CMake CI
+
+on:
+  # Run workflow on-demand
+  workflow_dispatch:
+  # Run workflow on pushes on all branches
+  push:
+
+# Run only one workflow per branch at a time
+concurrency:
+  group: environment-${{ github.ref }}
+  cancel-in-progress: true
+
+# TODO(moriarty)
+# matrix job to test windows and macos
+# Requires installing gtest via choco and brew
+jobs:
+  cmake_build_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: lukka/get-cmake@latest
+      - name: Install gtest with apt
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtest-dev
+      - name: Run CMake
+        run: |
+          cmake -B build
+      - name: Run make
+        run: |
+          make -C build
+      - name: Run make test
+        run: |
+          make -C build test
