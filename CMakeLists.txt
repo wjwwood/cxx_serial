@@ -9,8 +9,10 @@ endif()
 ## Sources
 set(serial_SRCS
     src/serial.cc
-    include/serial/serial.h
-    include/serial/v8stdint.h
+)
+set(serial_HDRS
+    ${CMAKE_CURRENT_LIST_DIR}/include/serial/serial.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/serial/v8stdint.h
 )
 if(APPLE)
     # If OSX
@@ -27,7 +29,11 @@ else()
 endif()
 
 ## Add serial library
-add_library(${PROJECT_NAME} ${serial_SRCS})
+add_library(${PROJECT_NAME})
+target_sources(${PROJECT_NAME}
+    PRIVATE ${serial_SRCS}
+    PUBLIC ${serial_HDRS}
+)
 if(APPLE)
     target_link_libraries(${PROJECT_NAME} ${FOUNDATION_LIBRARY} ${IOKIT_LIBRARY})
 elseif(UNIX)
@@ -35,6 +41,8 @@ elseif(UNIX)
 else()
     target_link_libraries(${PROJECT_NAME} setupapi)
 endif()
+# Make the headers available to any targets linking the library (e.g., serial_example, test, via FetchContent).
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
 
 ## Uncomment for example
 add_executable(serial_example examples/serial_example.cc)
@@ -52,7 +60,7 @@ install(TARGETS ${PROJECT_NAME}
 )
 
 ## Install headers
-install(FILES include/serial/serial.h include/serial/v8stdint.h
+install(FILES ${serial_HDRS}
     DESTINATION include/serial)
 
 ## Install CMake config
