@@ -49,6 +49,22 @@ Install:
 
     make install
 
+### Direct use in CMake Project
+
+```CMake
+include(FetchContent)
+set(CXX_SERIAL_EXAMPLES OFF)
+set(CXX_SERIAL_TEST OFF)
+set(CXX_SERIAL_INSTALL OFF)
+FetchContent_Declare(cxx_serial
+  GIT_REPOSITORY https://github.com/wjwwood/cxx_serial.git
+  GIT_TAG        f3d6e6cc9d8ee6b25575184d67a872b5d8d2fda9
+)
+FetchContent_MakeAvailable(cxx_serial)
+# ...
+target_link_libraries(${PROJECT_NAME} PRIVATE serial)
+```
+
 ### License
 
 [The MIT License](LICENSE)
