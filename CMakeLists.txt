@@ -1,5 +1,9 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.1)
 project(serial)
+
+option(CXX_SERIAL_EXAMPLES "Build the cxx-serial example targets" ON)
+option(CXX_SERIAL_TEST "Build the cxx-serial test targets" ON)
+option(CXX_SERIAL_INSTALL "Configure the cxx-serial install targets" ON)
 
 if(APPLE)
     find_library(IOKIT_LIBRARY IOKit)
@@ -9,8 +13,10 @@ endif()
 ## Sources
 set(serial_SRCS
     src/serial.cc
-    include/serial/serial.h
-    include/serial/v8stdint.h
+)
+set(serial_HDRS
+    ${CMAKE_CURRENT_LIST_DIR}/include/serial/serial.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/serial/v8stdint.h
 )
 if(APPLE)
     # If OSX
@@ -27,7 +33,11 @@ else()
 endif()
 
 ## Add serial library
-add_library(${PROJECT_NAME} ${serial_SRCS})
+add_library(${PROJECT_NAME})
+target_sources(${PROJECT_NAME}
+    PRIVATE ${serial_SRCS}
+    PUBLIC ${serial_HDRS}
+)
 if(APPLE)
     target_link_libraries(${PROJECT_NAME} ${FOUNDATION_LIBRARY} ${IOKIT_LIBRARY})
 elseif(UNIX)
@@ -35,37 +45,44 @@ elseif(UNIX)
 else()
     target_link_libraries(${PROJECT_NAME} setupapi)
 endif()
-
-## Uncomment for example
-add_executable(serial_example examples/serial_example.cc)
-add_dependencies(serial_example ${PROJECT_NAME})
-target_link_libraries(serial_example ${PROJECT_NAME})
-
-## Include headers
-include_directories(include)
-
-## Install executable
-install(TARGETS ${PROJECT_NAME}
-    ARCHIVE DESTINATION lib
-    LIBRARY DESTINATION lib
-    RUNTIME DESTINATION bin
+# Make the headers available to any targets linking the library (e.g., serial_example, test, via FetchContent).
+target_include_directories(${PROJECT_NAME} PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+        $<INSTALL_INTERFACE:include>
 )
 
-## Install headers
-install(FILES include/serial/serial.h include/serial/v8stdint.h
-    DESTINATION include/serial)
+if(${CXX_SERIAL_EXAMPLES})
+    ## Example executable using cxx-serial
+    add_executable(serial_example examples/serial_example.cc)
+    add_dependencies(serial_example ${PROJECT_NAME})
+    target_link_libraries(serial_example ${PROJECT_NAME})
+endif()
 
-## Install CMake config
-install(FILES cmake/serialConfig.cmake
-    DESTINATION share/serial/cmake)
+if(${CXX_SERIAL_INSTALL})
+    ## Install executable
+    install(TARGETS ${PROJECT_NAME}
+        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION lib
+        RUNTIME DESTINATION bin
+    )
 
+    ## Install headers
+    install(FILES ${serial_HDRS}
+        DESTINATION include/serial)
 
-## Install package.xml
-install(FILES package.xml
-    DESTINATION share/serial)
+    ## Install CMake config
+    install(FILES cmake/serialConfig.cmake
+        DESTINATION share/serial/cmake)
+
+    ## Install package.xml
+    install(FILES package.xml
+        DESTINATION share/serial)
+endif()
 
 ## Tests
-include(CTest)
-if(BUILD_TESTING)
-    add_subdirectory(tests)
+if(${CXX_SERIAL_TEST})
+    enable_testing()
+    if(BUILD_TESTING)
+        add_subdirectory(tests)
+    endif()
 endif()
